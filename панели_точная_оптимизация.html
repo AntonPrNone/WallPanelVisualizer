@@ -1,0 +1,1501 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Визуализатор стеновых панелей</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #1e1e1e;
+      color: #eee;
+      display: flex;
+      height: 100vh;
+    }
+
+    .sidebar {
+      width: 340px;
+      padding: 20px;
+      background: #2b2b2b;
+      box-sizing: border-box;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    label {
+      display: block;
+      margin-top: 14px;
+      font-size: 14px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      box-sizing: border-box;
+      background: #111;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 6px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 18px;
+      padding: 10px;
+      border: 0;
+      border-radius: 8px;
+      background: #4caf50;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .mode-desc {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #aaa;
+      line-height: 1.4;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 12px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .canvas-wrap {
+      flex: 1;
+      overflow: auto;
+      padding: 30px;
+      box-sizing: border-box;
+    }
+
+    .workspace {
+      min-width: max-content;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .visual-block {
+      width: max-content;
+    }
+
+    .visual-title {
+      margin: 0 0 12px 36px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #ddd;
+    }
+
+    .layout {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    #columnLabels,
+    #rowLabels,
+    #wall {
+      position: absolute;
+    }
+
+    #columnLabels {
+      left: 36px;
+      top: 0;
+      height: 28px;
+    }
+
+    #rowLabels {
+      left: 0;
+      top: 36px;
+      width: 28px;
+    }
+
+    #wall {
+      left: 36px;
+      top: 36px;
+      background: #f2f2f2;
+      box-shadow: 0 0 30px rgba(0,0,0,.55);
+    }
+
+    .axis-label {
+      position: absolute;
+      color: #ddd;
+      font-size: 12px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .column-label {
+      height: 28px;
+      top: 0;
+    }
+
+    .row-label {
+      width: 28px;
+      left: 0;
+    }
+
+    .panel {
+      position: absolute;
+      background: linear-gradient(135deg, #d8b37a, #b88645);
+      border: 1px solid rgba(0,0,0,.4);
+      box-sizing: border-box;
+      font-size: 11px;
+      color: rgba(0,0,0,.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      user-select: none;
+      white-space: nowrap;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .cut {
+      background: linear-gradient(135deg, #c78a5a, #9f5f34);
+      font-weight: bold;
+    }
+
+    .cut-level-1 {
+      background: linear-gradient(135deg, #c78a5a, #9f5f34);
+    }
+
+    .cut-level-2 {
+      background: linear-gradient(135deg, #c99554, #a87035);
+    }
+
+    .cut-level-3 {
+      background: linear-gradient(135deg, #b8a04e, #8d782d);
+    }
+
+    .cut-level-4 {
+      background: linear-gradient(135deg, #9aa85a, #6f7e36);
+    }
+
+    .cut-level-5 {
+      background: linear-gradient(135deg, #7fa36a, #4f7747);
+    }
+
+    .cut-level-more {
+      background: linear-gradient(135deg, #6b9b88, #3f6e61);
+    }
+
+    .level-badge {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #aaa;
+      line-height: 1.4;
+    }
+
+    .cut-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    .small-panel {
+      font-size: 9px;
+    }
+
+    .tiny-panel {
+      font-size: 8px;
+    }
+
+    .leftovers-block {
+      width: 100%;
+      max-width: 1300px;
+      box-sizing: border-box;
+      background: #181818;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .leftovers-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .leftovers-summary {
+      color: #bbb;
+      font-size: 13px;
+      line-height: 1.45;
+      margin-bottom: 12px;
+    }
+
+    .leftovers-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .leftover-card {
+      background: #222;
+      border: 1px solid #3a3a3a;
+      border-radius: 8px;
+      padding: 10px;
+      min-width: 190px;
+    }
+
+    .leftover-card-title {
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #eee;
+    }
+
+    .leftover-pieces {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .leftover-piece {
+      background: linear-gradient(135deg, #6f8f5b, #3f6535);
+      border: 1px solid rgba(255,255,255,.22);
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #f3ffe8;
+      font-size: 11px;
+      line-height: 1.15;
+      overflow: hidden;
+      border-radius: 3px;
+      user-select: none;
+    }
+
+
+
+    .leftover-level-2 { background: linear-gradient(135deg, #6f8f5b, #3f6535); }
+    .leftover-level-3 { background: linear-gradient(135deg, #6b8f7e, #3e6659); }
+    .leftover-level-4 { background: linear-gradient(135deg, #637f9d, #394f72); }
+    .leftover-level-5 { background: linear-gradient(135deg, #746b9d, #493f72); }
+    .leftover-level-more { background: linear-gradient(135deg, #8b6791, #613c67); }
+
+    .no-leftovers {
+      color: #aaa;
+      font-size: 13px;
+    }
+
+    .legend {
+      margin-top: 12px;
+      font-size: 13px;
+      opacity: .85;
+    }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h2>Раскладка панелей</h2>
+
+  <label>Ширина стены, см</label>
+  <input id="wallWidth" type="number" value="500">
+
+  <label>Высота стены, см</label>
+  <input id="wallHeight" type="number" value="240">
+
+  <label>Ширина панели, см</label>
+  <input id="panelWidth" type="number" value="70">
+
+  <label>Высота панели, см</label>
+  <input id="panelHeight" type="number" value="70">
+
+  <label>Ориентация панели</label>
+  <select id="orientation">
+    <option value="normal">Обычная</option>
+    <option value="rotated">Повернуть на 90°</option>
+  </select>
+
+  <label>Ограничение уровней подрезок</label>
+  <select id="cutLevelMode" onchange="updateCutLevelDesc()">
+    <option value="unlimited" selected>Без ограничений</option>
+    <option value="1">1 уровень</option>
+    <option value="2">2 уровня</option>
+    <option value="3">3 уровня</option>
+    <option value="4">4 уровня</option>
+    <option value="5">5 уровней</option>
+  </select>
+  <div class="mode-desc" id="cutLevelDesc">
+    Без ограничений: остатки можно снова резать и использовать, подрезка на стене может быть набрана несколькими кусками.
+  </div>
+
+  <button onclick="render()">Рассчитать</button>
+
+  <div class="result" id="result"></div>
+</div>
+
+<div class="canvas-wrap">
+  <div class="workspace">
+    <div class="visual-block">
+      <div class="visual-title">Стена</div>
+      <div class="layout" id="layout">
+        <div id="columnLabels"></div>
+        <div id="rowLabels"></div>
+        <div id="wall"></div>
+      </div>
+    </div>
+
+    <div class="leftovers-block" id="leftoversBlock">
+      <div class="leftovers-title">Остатки после раскроя</div>
+      <div class="leftovers-summary" id="leftoversSummary"></div>
+      <div class="leftovers-grid" id="leftoversVisual"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function updateCutLevelDesc() {
+  const mode = document.getElementById('cutLevelMode').value;
+  const desc = document.getElementById('cutLevelDesc');
+
+  if (mode === 'unlimited') {
+    desc.textContent = 'Без ограничений: остатки можно снова резать и использовать до упора. Сначала минимизируется число покупных панелей, затем число элементов на стене.';
+  } else if (mode === '1') {
+    desc.textContent = '1 уровень: каждое место подрезки закрывается одним куском из отдельной цельной панели. Остатки только показываются, но не идут дальше в работу.';
+  } else {
+    desc.textContent = `${mode} уровня/уровней: остатки можно возвращать в раскрой. Для полосовых подрезок расчёт выбирает минимум панелей, а затем минимум элементов на стене.`;
+  }
+}
+
+function getCutLevelLimit() {
+  const mode = document.getElementById('cutLevelMode').value;
+  return mode === 'unlimited' ? Infinity : Number(mode);
+}
+
+function getCutLevelText(limit) {
+  return limit === Infinity ? 'без ограничений' : `${limit} уровень/уровня`;
+}
+
+function render() {
+  const wallW = Number(document.getElementById('wallWidth').value);
+  const wallH = Number(document.getElementById('wallHeight').value);
+
+  let panelW = Number(document.getElementById('panelWidth').value);
+  let panelH = Number(document.getElementById('panelHeight').value);
+
+  const orientation = document.getElementById('orientation').value;
+  const cutLevelLimit = getCutLevelLimit();
+
+  const result = document.getElementById('result');
+  const layout = document.getElementById('layout');
+  const wall = document.getElementById('wall');
+  const columnLabels = document.getElementById('columnLabels');
+  const rowLabels = document.getElementById('rowLabels');
+  const leftoversSummary = document.getElementById('leftoversSummary');
+  const leftoversVisual = document.getElementById('leftoversVisual');
+
+  if (!wallW || !wallH || !panelW || !panelH) {
+    result.innerHTML = 'Заполни все размеры.';
+    clearVisuals();
+    return;
+  }
+
+  if (wallW <= 0 || wallH <= 0 || panelW <= 0 || panelH <= 0) {
+    result.innerHTML = 'Размеры должны быть больше нуля.';
+    clearVisuals();
+    return;
+  }
+
+  if (orientation === 'rotated') {
+    [panelW, panelH] = [panelH, panelW];
+  }
+
+  wall.innerHTML = '';
+  columnLabels.innerHTML = '';
+  rowLabels.innerHTML = '';
+  leftoversSummary.innerHTML = '';
+  leftoversVisual.innerHTML = '';
+
+  const sidebarW = 340;
+  const padding = 110;
+  const axisOffset = 36;
+
+  const availableW = window.innerWidth - sidebarW - padding - axisOffset;
+  const availableH = Math.max(260, window.innerHeight - 360 - axisOffset);
+  const scale = Math.min(availableW / wallW, availableH / wallH);
+
+  const wallPxW = wallW * scale;
+  const wallPxH = wallH * scale;
+
+  layout.style.width = wallPxW + axisOffset + 'px';
+  layout.style.height = wallPxH + axisOffset + 'px';
+  wall.style.width = wallPxW + 'px';
+  wall.style.height = wallPxH + 'px';
+  columnLabels.style.width = wallPxW + 'px';
+  rowLabels.style.height = wallPxH + 'px';
+
+  const cells = [];
+  const cuts = [];
+  let fullPanels = 0;
+  let totalPlaces = 0;
+
+  let y = 0;
+  let rowIndex = 0;
+
+  while (y < wallH) {
+    const currentH = Math.min(panelH, wallH - y);
+
+    const rowLabel = document.createElement('div');
+    rowLabel.className = 'axis-label row-label';
+    rowLabel.style.top = y * scale + 'px';
+    rowLabel.style.height = currentH * scale + 'px';
+    rowLabel.textContent = rowIndex + 1;
+    rowLabels.appendChild(rowLabel);
+
+    let x = 0;
+    let colIndex = 0;
+
+    while (x < wallW) {
+      const currentW = Math.min(panelW, wallW - x);
+      const isFull = same(currentW, panelW) && same(currentH, panelH);
+      const cellName = `${colIndex + 1}.${rowIndex + 1}`;
+
+      if (rowIndex === 0) {
+        const columnLabel = document.createElement('div');
+        columnLabel.className = 'axis-label column-label';
+        columnLabel.style.left = x * scale + 'px';
+        columnLabel.style.width = currentW * scale + 'px';
+        columnLabel.textContent = colIndex + 1;
+        columnLabels.appendChild(columnLabel);
+      }
+
+      const cell = { x, y, width: currentW, height: currentH, isFull, cellName, cutNumber: null, pieces: null };
+      cells.push(cell);
+      totalPlaces++;
+
+      if (isFull) {
+        fullPanels++;
+      } else {
+        cell.cutNumber = cuts.length + 1;
+        cuts.push({
+          number: cell.cutNumber,
+          cell: cellName,
+          width: currentW,
+          height: currentH,
+          area: currentW * currentH,
+          cellRef: cell
+        });
+      }
+
+      x += panelW;
+      colIndex++;
+    }
+
+    y += panelH;
+    rowIndex++;
+  }
+
+  const minimalCutResult = calculateCutsByLevel(cuts, panelW, panelH, 1);
+  const economyCutResult = calculateCutsByLevel(cuts, panelW, panelH, Infinity);
+  const selectedCutResult = calculateCutsByLevel(cuts, panelW, panelH, cutLevelLimit);
+
+  const selectedPanelsNeeded = fullPanels + selectedCutResult.panelsForCuts;
+  const selectedLevelText = getCutLevelText(cutLevelLimit);
+
+  for (const cut of cuts) {
+    cut.cellRef.pieces = selectedCutResult.cellPieces.get(cut.number) || [{ width: cut.width, height: cut.height, level: 1 }];
+  }
+
+  for (const cell of cells) {
+    if (cell.isFull) {
+      drawPanel(wall, scale, cell.x, cell.y, cell.width, cell.height, false, '', `${cell.cellName}: ${round(cell.width)}×${round(cell.height)} см`);
+      continue;
+    }
+
+    const pieces = cell.pieces || [{ width: cell.width, height: cell.height, level: 1 }];
+    let offsetX = 0;
+    let offsetY = 0;
+
+    for (let i = 0; i < pieces.length; i++) {
+      const piece = pieces[i];
+      const label = pieces.length === 1
+        ? `#${cell.cutNumber}<br>${round(piece.width)}×${round(piece.height)} см`
+        : `#${cell.cutNumber}.${i + 1}<br>${round(piece.width)}×${round(piece.height)} см`;
+
+      const pieceX = piece.x !== undefined ? piece.x : offsetX;
+      const pieceY = piece.y !== undefined ? piece.y : offsetY;
+
+      drawPanel(
+        wall,
+        scale,
+        cell.x + pieceX,
+        cell.y + pieceY,
+        piece.width,
+        piece.height,
+        true,
+        label,
+        `Подрезка #${cell.cutNumber}, часть ${i + 1}: ${round(piece.width)}×${round(piece.height)} см, уровень ${piece.level || 1}`,
+        piece.level || 1
+      );
+
+      if (piece.x === undefined && piece.y === undefined) {
+        if (pieces.length > 1 && allSameHeight(pieces, cell.height)) offsetX += piece.width;
+        else if (pieces.length > 1 && allSameWidth(pieces, cell.width)) offsetY += piece.height;
+      }
+    }
+  }
+
+  const wallArea = wallW * wallH;
+  const panelArea = panelW * panelH;
+  const withReserve5 = Math.ceil(selectedPanelsNeeded * 1.05);
+  const withReserve10 = Math.ceil(selectedPanelsNeeded * 1.10);
+  const cutElementsOnWall = selectedCutResult.wallCutElements;
+  const leftovers = selectedCutResult.leftovers;
+  const leftoversArea = leftovers.reduce((sum, item) => sum + item.width * item.height, 0);
+  const leftoversBySize = groupLeftoversBySize(leftovers);
+  const usedWallLevels = getUsedWallLevels(selectedCutResult.cellPieces);
+  const usedAllLevels = getUsedAllLevels(selectedCutResult.cellPieces, leftovers);
+
+  renderLeftovers(leftovers, panelW, panelH, selectedCutResult.panelsForCuts, leftoversArea, leftoversBySize, usedWallLevels, usedAllLevels);
+
+  let cutsHtml = '';
+  if (cuts.length > 0) {
+    const cutList = cuts.map(c => {
+      const pieces = selectedCutResult.cellPieces.get(c.number) || [];
+      const piecesText = pieces.length > 1
+        ? ` → ${pieces.map(p => `${round(p.width)}×${round(p.height)} ур.${p.level || 1}`).join(' + ')}`
+        : '';
+      return `#${c.number}, ${c.cell}: ${round(c.width)}×${round(c.height)} см${piecesText}`;
+    }).join('<br>');
+
+    const panelsHtml = selectedCutResult.panels.map((p, i) => {
+      const items = p.items.map(it => it.label).join(', ');
+      const waste = p.waste.length
+        ? `; осталось: ${p.waste.map(w => `${round(w.width)}×${round(w.height)}`).join(', ')}`
+        : '; осталось: нет';
+      return `Панель ${i + 1}: ${items}${waste}`;
+    }).join('<br>');
+
+    cutsHtml = `
+      <br>
+      <b>Подрезки (${cuts.length} мест, ${cutElementsOnWall} элементов на стене):</b><br>
+      ${cutList}
+      <br><br>
+      <b>Раскрой цельных панелей под подрезки (${selectedCutResult.panelsForCuts} шт.):</b><br>
+      ${panelsHtml}
+    `;
+  }
+
+  const leftoversText = leftovers.length
+    ? leftoversBySize.map(x => `${x.count} шт. ${x.size}`).join('<br>')
+    : 'нет';
+
+  result.innerHTML = `
+    <b>Результат:</b><br>
+    Размер стены: ${wallW}×${wallH} см<br>
+    Размер панели: ${panelW}×${panelH} см<br>
+    Ограничение подрезок: ${selectedLevelText}<br>
+    Фактически использовано уровней в раскладке: ${usedWallLevels || 0}<br>Максимальный уровень оставшихся остатков: ${getMaxLeftoverLevel(leftovers) || 0}<br><br>
+
+    Целых панелей на стене: ${fullPanels}<br>
+    Мест с подрезкой: ${cuts.length}<br>
+    Резаных элементов на стене: ${cutElementsOnWall}<br>
+    Цельных панелей, ушедших на подрезки: ${selectedCutResult.panelsForCuts}<br>
+    Всего элементов на стене: ${fullPanels + cutElementsOnWall}<br><br>
+
+    <b>Панелей к покупке: ${selectedPanelsNeeded}</b><br>
+    С запасом 5%: ${withReserve5}<br>
+    С запасом 10%: ${withReserve10}<br><br>
+
+    <b>Остатки:</b><br>
+    Количество остатков: ${leftovers.length}<br>
+    Площадь остатков: ${round(leftoversArea / 10000)} м²<br>
+    ${leftoversText}<br><br>
+
+    <i style="color:#aaa;font-size:12px;">
+      Для сравнения:<br>
+      1 уровень подрезок: ${fullPanels + minimalCutResult.panelsForCuts}<br>
+      Без ограничений: ${fullPanels + economyCutResult.panelsForCuts}
+    </i><br><br>
+
+    Площадь стены: ${round(wallArea / 10000)} м²<br>
+    Площадь панели: ${round(panelArea / 10000)} м²
+
+    ${cutsHtml}
+
+    <div class="legend">
+      Сверху — номера колонок, слева — номера строк.
+    </div>
+  `;
+}
+
+function clearVisuals() {
+  document.getElementById('wall').innerHTML = '';
+  document.getElementById('columnLabels').innerHTML = '';
+  document.getElementById('rowLabels').innerHTML = '';
+  document.getElementById('leftoversSummary').innerHTML = '';
+  document.getElementById('leftoversVisual').innerHTML = '';
+}
+
+function drawPanel(parent, scale, x, y, width, height, isCut, html, title, level = 1) {
+  const div = document.createElement('div');
+  div.className = 'panel' + (isCut ? ` cut ${getCutLevelClass(level)}` : '');
+
+  const pxW = width * scale;
+  const pxH = height * scale;
+
+  div.style.left = x * scale + 'px';
+  div.style.top = y * scale + 'px';
+  div.style.width = pxW + 'px';
+  div.style.height = pxH + 'px';
+  div.title = title;
+
+  if (!isCut) {
+    div.textContent = `${round(width)}×${round(height)} см`;
+  } else if (pxW < 38 || pxH < 26) {
+    div.classList.add('tiny-panel');
+    div.innerHTML = html.split('<br>')[0];
+  } else {
+    if (pxW < 65 || pxH < 40) div.classList.add('small-panel');
+    div.innerHTML = `<div class="cut-content"><div>${html.replace('<br>', '</div><div>')}</div><div style="font-size:10px;opacity:.78;">ур. ${level}</div></div>`;
+  }
+
+  parent.appendChild(div);
+}
+
+function getCutLevelClass(level) {
+  if (level <= 1) return 'cut-level-1';
+  if (level === 2) return 'cut-level-2';
+  if (level === 3) return 'cut-level-3';
+  if (level === 4) return 'cut-level-4';
+  if (level === 5) return 'cut-level-5';
+  return 'cut-level-more';
+}
+
+
+function calculateCutsByLevel(cuts, panelW, panelH, maxLevel) {
+  if (maxLevel === 1 || cuts.length === 0) {
+    return calculateMinimalCuts(cuts, panelW, panelH);
+  }
+
+  const stripKind = detectOneDimensionalStrips(cuts, panelW, panelH);
+  if (stripKind) {
+    return calculateStripCuts(cuts, panelW, panelH, stripKind, maxLevel);
+  }
+
+  // Для сложных смешанных угловых раскладок пока оставлен старый 2D-упаковщик.
+  // Для простых полос, где как раз важны многоуровневые остатки, работает точная модель по длине/площади.
+  return calculateEconomyCuts(cuts, panelW, panelH);
+}
+
+function detectOneDimensionalStrips(cuts, panelW, panelH) {
+  if (!cuts.length) return null;
+
+  const vertical = cuts.every(c => same(c.height, panelH) && c.width > 0 && c.width <= panelW);
+  if (vertical) return 'vertical';
+
+  const horizontal = cuts.every(c => same(c.width, panelW) && c.height > 0 && c.height <= panelH);
+  if (horizontal) return 'horizontal';
+
+  return null;
+}
+
+function calculateStripCuts(cuts, panelW, panelH, kind, maxLevel) {
+  // Оптимизация для полосовых подрезок.
+  // Приоритеты:
+  // 1) минимум покупных цельных панелей;
+  // 2) минимум элементов на стене;
+  // 3) стабильный понятный порядок вывода.
+  const cellPieces = new Map();
+  const panels = [];
+  const capacity = kind === 'vertical' ? panelW : panelH;
+  const totalNeed = cuts.reduce((sum, cut) => sum + getStripLength(cut, kind), 0);
+  const panelsCount = Math.ceil(totalNeed / capacity - 0.0000001);
+  const limit = maxLevel === Infinity ? Infinity : Math.max(1, maxLevel);
+
+  for (let i = 0; i < panelsCount; i++) {
+    panels.push({
+      items: [],
+      waste: [],
+      sourcePanel: i + 1,
+      remaining: capacity
+    });
+  }
+
+  const ordered = [...cuts].sort((a, b) => {
+    const lenDiff = getStripLength(b, kind) - getStripLength(a, kind);
+    return Math.abs(lenDiff) > 0.0001 ? lenDiff : a.number - b.number;
+  });
+
+  const notWhole = [];
+
+  // Сначала режем как можно больше целых мест подрезки из цельных панелей.
+  // Это даёт меньше элементов на стене при том же минимальном числе покупных панелей.
+  for (const cut of ordered) {
+    const len = getStripLength(cut, kind);
+    let bestPanel = null;
+    let bestRestAfter = Infinity;
+
+    for (const panel of panels) {
+      if (panel.remaining + 0.0001 < len) continue;
+      const restAfter = panel.remaining - len;
+      if (restAfter < bestRestAfter) {
+        bestRestAfter = restAfter;
+        bestPanel = panel;
+      }
+    }
+
+    if (!bestPanel) {
+      notWhole.push(cut);
+      continue;
+    }
+
+    bestPanel.remaining -= len;
+    bestPanel.items.push({
+      type: 'whole',
+      cutNumber: cut.number,
+      label: `#${cut.number} ${round(cut.width)}×${round(cut.height)} ур.1`
+    });
+
+    cellPieces.set(cut.number, [{
+      width: cut.width,
+      height: cut.height,
+      level: 1,
+      sourcePanel: bestPanel.sourcePanel
+    }]);
+  }
+
+  let stock = panels
+    .filter(panel => panel.remaining > 0.0001)
+    .map(panel => ({
+      length: panel.remaining,
+      sourcePanel: panel.sourcePanel,
+      level: 2
+    }));
+
+  notWhole.sort((a, b) => a.number - b.number);
+
+  for (const cut of notWhole) {
+    let need = getStripLength(cut, kind);
+    const pieces = [];
+    let partIndex = 1;
+
+    while (need > 0.0001) {
+      stock.sort((a, b) => b.length - a.length || a.level - b.level || a.sourcePanel - b.sourcePanel);
+
+      let index = stock.findIndex(s => {
+        if (s.length <= 0.0001) return false;
+        if (s.level > limit) return false;
+        return true;
+      });
+
+      if (index === -1) {
+        // Если ограничение уровней не позволяет добрать из остатков — открываем новую цельную панель.
+        const panel = {
+          items: [],
+          waste: [],
+          sourcePanel: panels.length + 1,
+          remaining: capacity
+        };
+        panels.push(panel);
+        stock.push({ length: capacity, sourcePanel: panel.sourcePanel, level: 1 });
+        continue;
+      }
+
+      const source = stock[index];
+      const take = Math.min(need, source.length);
+      const pieceLevel = source.level;
+      const piece = makeStripPiece(take, cut, kind, pieceLevel, source.sourcePanel);
+
+      pieces.push(piece);
+
+      const panel = panels[source.sourcePanel - 1];
+      panel.items.push({
+        type: 'part',
+        cutNumber: cut.number,
+        partIndex,
+        label: `#${cut.number}.${partIndex} ${round(piece.width)}×${round(piece.height)} ур.${pieceLevel}`
+      });
+
+      source.length -= take;
+      need -= take;
+      partIndex++;
+
+      if (source.length <= 0.0001) {
+        stock.splice(index, 1);
+      } else {
+        // После дополнительного реза оставшийся хвост становится следующим уровнем.
+        source.level = Math.min(source.level + 1, 999);
+      }
+    }
+
+    cellPieces.set(cut.number, pieces);
+  }
+
+  for (const panel of panels) panel.waste = [];
+
+  const leftovers = stock
+    .filter(s => s.length > 0.0001)
+    .map(s => makeStripWaste(s.length, kind, panelW, panelH, s.sourcePanel, s.level));
+
+  for (const waste of leftovers) {
+    const panel = panels[waste.sourcePanel - 1];
+    if (panel) panel.waste.push(waste);
+  }
+
+  for (const panel of panels) delete panel.remaining;
+
+  const wallCutElements = [...cellPieces.values()].reduce((sum, pieces) => sum + pieces.length, 0);
+  const usedWallLevels = getUsedWallLevels(cellPieces);
+  const usedAllLevels = getUsedAllLevels(cellPieces, leftovers);
+
+  return {
+    panelsForCuts: panels.length,
+    wallCutElements,
+    cellPieces,
+    panels,
+    leftovers,
+    usedWallLevels,
+    usedAllLevels
+  };
+}
+
+
+function getStripLength(cut, kind) {
+  return kind === 'vertical' ? cut.width : cut.height;
+}
+
+function makeStripPiece(length, cut, kind, level, sourcePanel) {
+  return kind === 'vertical'
+    ? { width: length, height: cut.height, level, sourcePanel }
+    : { width: cut.width, height: length, level, sourcePanel };
+}
+
+function makeStripWaste(length, kind, panelW, panelH, sourcePanel, level = 2) {
+  return kind === 'vertical'
+    ? { width: length, height: panelH, sourcePanel, level }
+    : { width: panelW, height: length, sourcePanel, level };
+}
+
+function calculateMinimalCuts(cuts, panelW, panelH) {
+  const cellPieces = new Map();
+  const panels = [];
+  const leftovers = [];
+
+  for (const cut of cuts) {
+    const panelNumber = panels.length + 1;
+    cellPieces.set(cut.number, [{ width: cut.width, height: cut.height, level: 1, sourcePanel: panelNumber }]);
+
+    const waste = getWasteAfterCut(panelW, panelH, cut.width, cut.height)
+      .map(w => ({ ...w, sourcePanel: panelNumber, level: 2 }));
+
+    leftovers.push(...waste.map(w => ({ ...w })));
+
+    panels.push({
+      items: [{ label: `#${cut.number} ${round(cut.width)}×${round(cut.height)}` }],
+      waste
+    });
+  }
+
+  return {
+    panelsForCuts: cuts.length,
+    wallCutElements: cuts.length,
+    cellPieces,
+    panels,
+    leftovers,
+    usedWallLevels: getUsedWallLevels(cellPieces),
+    usedAllLevels: getUsedAllLevels(cellPieces, leftovers)
+  };
+}
+
+function calculateEconomyCuts(cuts, panelW, panelH) {
+  const cellPieces = new Map();
+  const panels = [];
+  const stock = [];
+
+  const ordered = [...cuts].sort((a, b) => b.area - a.area || b.width - a.width || b.height - a.height);
+
+  for (let index = 0; index < ordered.length; index++) {
+    const cut = ordered[index];
+    const remaining = ordered.slice(index);
+
+    let filled = null;
+    if (canStockCoverAll(remaining, stock)) {
+      filled = takePiecesFromStock(cut.width, cut.height, stock);
+    }
+
+    if (filled) {
+      cellPieces.set(cut.number, filled.map(p => ({
+        width: p.width,
+        height: p.height,
+        level: p.level,
+        sourcePanel: p.sourcePanel
+      })));
+      continue;
+    }
+
+    const panelNumber = panels.length + 1;
+    const waste = getWasteAfterCut(panelW, panelH, cut.width, cut.height)
+      .map(w => ({ ...w, level: 2, sourcePanel: panelNumber }));
+
+    for (const w of waste) stock.push({ ...w });
+
+    panels.push({
+      items: [{ label: `#${cut.number} ${round(cut.width)}×${round(cut.height)}` }],
+      waste: []
+    });
+
+    cellPieces.set(cut.number, [{ width: cut.width, height: cut.height, level: 1, sourcePanel: panelNumber }]);
+  }
+
+  for (const [cutNumber, pieces] of cellPieces) {
+    if (pieces.length <= 1) continue;
+    for (const piece of pieces) {
+      if (!piece.sourcePanel) continue;
+      const panel = panels[piece.sourcePanel - 1];
+      if (panel) panel.items.push({ label: `#${cutNumber} часть ${round(piece.width)}×${round(piece.height)}` });
+    }
+  }
+
+  for (const s of stock) {
+    const panel = panels[s.sourcePanel - 1];
+    if (panel) panel.waste.push({ width: s.width, height: s.height, sourcePanel: s.sourcePanel });
+  }
+
+  const wallCutElements = [...cellPieces.values()].reduce((sum, pieces) => sum + pieces.length, 0);
+  const leftovers = stock.map(s => ({ ...s }));
+
+  return {
+    panelsForCuts: panels.length,
+    wallCutElements,
+    cellPieces,
+    panels,
+    leftovers,
+    usedWallLevels: getUsedWallLevels(cellPieces),
+    usedAllLevels: getUsedAllLevels(cellPieces, leftovers)
+  };
+}
+
+function getWasteAfterCut(panelW, panelH, cutW, cutH) {
+  const waste = [];
+
+  if (cutW > panelW || cutH > panelH) return waste;
+
+  const rightW = panelW - cutW;
+  const bottomH = panelH - cutH;
+
+  if (rightW > 0) waste.push({ width: rightW, height: cutH });
+  if (bottomH > 0) waste.push({ width: panelW, height: bottomH });
+
+  return waste.filter(w => w.width > 0 && w.height > 0);
+}
+
+function canStockCoverAll(cuts, stock) {
+  const clonedStock = stock.map(s => ({ ...s }));
+  for (const cut of cuts) {
+    const pieces = takePiecesFromStock(cut.width, cut.height, clonedStock);
+    if (!pieces) return false;
+  }
+  return true;
+}
+
+function takePiecesFromStock(width, height, stock) {
+  for (let i = 0; i < stock.length; i++) {
+    const s = stock[i];
+    if (sameSize(s.width, s.height, width, height)) {
+      stock.splice(i, 1);
+      return [{ ...s, width, height }];
+    }
+  }
+
+  let candidate = findSubsetBySum(stock, s => same(s.height, height) && s.width <= width, s => s.width, width);
+  if (candidate) return removeSubset(stock, candidate);
+
+  candidate = findSubsetBySum(stock, s => same(s.width, width) && s.height <= height, s => s.height, height);
+  if (candidate) return removeSubset(stock, candidate);
+
+  return null;
+}
+
+function findSubsetBySum(items, predicate, valueGetter, target) {
+  const filtered = items
+    .map((item, index) => ({ item, index }))
+    .filter(x => predicate(x.item))
+    .sort((a, b) => valueGetter(b.item) - valueGetter(a.item));
+
+  function search(pos, sum, picked) {
+    if (same(sum, target)) return picked;
+    if (sum > target || pos >= filtered.length) return null;
+
+    for (let i = pos; i < filtered.length; i++) {
+      const value = valueGetter(filtered[i].item);
+      const result = search(i + 1, sum + value, [...picked, filtered[i].index]);
+      if (result) return result;
+    }
+
+    return null;
+  }
+
+  return search(0, 0, []);
+}
+
+function removeSubset(stock, indexes) {
+  const sorted = [...indexes].sort((a, b) => b - a);
+  const pieces = [];
+  for (const index of sorted) pieces.unshift(stock.splice(index, 1)[0]);
+  return pieces;
+}
+
+function renderLeftovers(leftovers, panelW, panelH, panelsForCuts, leftoversArea, leftoversBySize, usedWallLevels, usedAllLevels) {
+  const summary = document.getElementById('leftoversSummary');
+  const visual = document.getElementById('leftoversVisual');
+
+  if (!leftovers.length) {
+    summary.innerHTML = `Остатков нет. Панелей под подрезки использовано: ${panelsForCuts}.`;
+    visual.innerHTML = '<div class="no-leftovers">Нечего показывать.</div>';
+    return;
+  }
+
+  summary.innerHTML = `
+    Всего остатков: <b>${leftovers.length}</b><br>
+    Площадь остатков: <b>${round(leftoversArea / 10000)} м²</b><br>
+    Уровней в остатках: <b>${getMaxLeftoverLevel(leftovers) || 0}</b><br>
+    По размерам: ${leftoversBySize.map(x => `<b>${x.count} шт.</b> ${x.size}`).join(', ')}
+  `;
+
+  const byPanel = new Map();
+  for (const item of leftovers) {
+    const key = item.sourcePanel || 0;
+    if (!byPanel.has(key)) byPanel.set(key, []);
+    byPanel.get(key).push(item);
+  }
+
+  for (const [panelNumber, pieces] of byPanel) {
+    const card = document.createElement('div');
+    card.className = 'leftover-card';
+
+    const title = document.createElement('div');
+    title.className = 'leftover-card-title';
+    title.textContent = panelNumber ? `Панель ${panelNumber}` : 'Без источника';
+    card.appendChild(title);
+
+    const piecesBox = document.createElement('div');
+    piecesBox.className = 'leftover-pieces';
+
+    for (const piece of pieces) {
+      const div = document.createElement('div');
+      const level = piece.level || 2;
+      div.className = `leftover-piece ${getLeftoverLevelClass(level)}`;
+      div.style.width = Math.max(42, piece.width / panelW * 150) + 'px';
+      div.style.height = Math.max(28, piece.height / panelH * 110) + 'px';
+      div.title = `${round(piece.width)}×${round(piece.height)} см, остаток ур. ${level}`;
+      div.innerHTML = `${round(piece.width)}×${round(piece.height)}<br>см<br><span style="font-size:10px;opacity:.8;">ур. ${level}</span>`;
+      piecesBox.appendChild(div);
+    }
+
+    card.appendChild(piecesBox);
+    visual.appendChild(card);
+  }
+}
+
+function getLeftoverLevelClass(level) {
+  if (level <= 2) return 'leftover-level-2';
+  if (level === 3) return 'leftover-level-3';
+  if (level === 4) return 'leftover-level-4';
+  if (level === 5) return 'leftover-level-5';
+  return 'leftover-level-more';
+}
+
+function getUsedWallLevels(cellPieces) {
+  let max = 0;
+  for (const pieces of cellPieces.values()) {
+    for (const piece of pieces) max = Math.max(max, piece.level || 1);
+  }
+  return max;
+}
+
+function getUsedAllLevels(cellPieces, leftovers) {
+  let max = getUsedWallLevels(cellPieces);
+  for (const item of leftovers) max = Math.max(max, item.level || 1);
+  return max;
+}
+
+function groupLeftoversBySize(leftovers) {
+  const map = new Map();
+
+  for (const item of leftovers) {
+    const key = `${round(item.width)}×${round(item.height)} см, ур. ${item.level || 2}`;
+    map.set(key, (map.get(key) || 0) + 1);
+  }
+
+  return [...map.entries()]
+    .map(([size, count]) => ({ size, count }))
+    .sort((a, b) => b.count - a.count || a.size.localeCompare(b.size));
+}
+
+function sameSize(w1, h1, w2, h2) {
+  return same(w1, w2) && same(h1, h2);
+}
+
+function same(a, b) {
+  return Math.abs(a - b) < 0.0001;
+}
+
+function allSameHeight(pieces, height) {
+  return pieces.every(p => same(p.height, height));
+}
+
+function allSameWidth(pieces, width) {
+  return pieces.every(p => same(p.width, width));
+}
+
+function round(value) {
+  return Math.round(value * 100) / 100;
+}
+
+
+// Новая модель: рекурсивно закрывает зоны подрезок кусками, которые могут быть
+// дорезаны из любых доступных остатков. Приоритеты: минимум покупных панелей,
+// затем минимум элементов на стене, затем меньшее количество остатков.
+function calculateCutsByLevel(cuts, panelW, panelH, maxLevel) {
+  if (maxLevel === 1 || cuts.length === 0) return calculateMinimalCuts(cuts, panelW, panelH);
+
+  const result = calculateRecursiveCoverCuts(cuts, panelW, panelH, maxLevel);
+  if (result) return result;
+
+  // Запасной вариант, если рекурсивный поиск на слишком сложном наборе не успел.
+  const stripKind = detectOneDimensionalStrips(cuts, panelW, panelH);
+  if (stripKind) return calculateStripCuts(cuts, panelW, panelH, stripKind, maxLevel);
+  return calculateEconomyCuts(cuts, panelW, panelH);
+}
+
+function calculateRecursiveCoverCuts(cuts, panelW, panelH, maxLevel) {
+  const EPS = 0.0001;
+  const totalArea = cuts.reduce((sum, c) => sum + c.width * c.height, 0);
+  const minPanels = Math.max(1, Math.ceil(totalArea / (panelW * panelH) - EPS));
+  const maxPanels = Math.max(minPanels, cuts.length);
+  const limit = maxLevel === Infinity ? 999 : Math.max(1, maxLevel);
+
+  const initialTargets = cuts.map(c => ({
+    cutNumber: c.number,
+    x: 0,
+    y: 0,
+    width: c.width,
+    height: c.height
+  }));
+
+  for (let panelCount = minPanels; panelCount <= maxPanels; panelCount++) {
+    const spaces = [];
+    for (let i = 1; i <= panelCount; i++) {
+      spaces.push({ panel: i, x: 0, y: 0, width: panelW, height: panelH, level: 1 });
+    }
+
+    const solved = solveRecursiveCover(initialTargets, spaces, panelW, panelH, limit);
+    if (solved) return buildRecursiveResult(solved, panelCount, panelW, panelH);
+  }
+
+  return null;
+}
+
+function solveRecursiveCover(initialTargets, initialSpaces, panelW, panelH, levelLimit) {
+  const EPS = 0.0001;
+  let best = null;
+  let bestScore = Infinity;
+  let visited = new Map();
+  let nodes = 0;
+  const nodeLimit = 250000;
+
+  function dfs(targets, spaces, pieces) {
+    nodes++;
+    if (nodes > nodeLimit) return;
+
+    if (pieces.length >= bestScore) return;
+
+    const needArea = targets.reduce((s, t) => s + t.width * t.height, 0);
+    const freeArea = spaces.reduce((s, r) => s + r.width * r.height, 0);
+    if (needArea - freeArea > EPS) return;
+
+    if (targets.length === 0) {
+      const leftovers = normalizeRects(spaces).filter(s => s.width > EPS && s.height > EPS);
+      const score = pieces.length * 100000 + leftovers.length * 1000 + leftovers.reduce((s, r) => s + r.width * r.height, 0);
+      if (score < bestScore) {
+        bestScore = score;
+        best = { pieces: pieces.map(p => ({ ...p })), leftovers: leftovers.map(r => ({ ...r })) };
+      }
+      return;
+    }
+
+    const key = makeSearchKey(targets, spaces);
+    const oldPiecesCount = visited.get(key);
+    if (oldPiecesCount !== undefined && oldPiecesCount <= pieces.length) return;
+    visited.set(key, pieces.length);
+
+    const selected = selectTarget(targets, spaces, levelLimit);
+    if (!selected) return;
+
+    const target = selected.target;
+    const targetIndex = selected.index;
+    const candidates = generateCoverCandidates(target, spaces, levelLimit);
+    if (!candidates.length) return;
+
+    const restTargets = targets.slice(0, targetIndex).concat(targets.slice(targetIndex + 1));
+
+    for (const cand of candidates) {
+      const space = spaces[cand.spaceIndex];
+      const pieceLevel = space.level;
+      if (pieceLevel > levelLimit) continue;
+
+      const targetSplits = splitTargetRect(target, cand.targetW, cand.targetH);
+      const stockSplits = splitStockRect(space, cand.stockW, cand.stockH);
+
+      for (const nextTargetParts of targetSplits) {
+        const newTargets = normalizeRects(restTargets.concat(nextTargetParts));
+
+        for (const nextStockParts of stockSplits) {
+          const newSpaces = spaces.slice(0, cand.spaceIndex).concat(spaces.slice(cand.spaceIndex + 1), nextStockParts);
+          const normalizedSpaces = normalizeSpaces(newSpaces);
+
+          const newPiece = {
+            cutNumber: target.cutNumber,
+            x: target.x,
+            y: target.y,
+            width: cand.targetW,
+            height: cand.targetH,
+            level: pieceLevel,
+            sourcePanel: space.panel,
+            rotatedInSource: cand.rotated
+          };
+
+          dfs(newTargets, normalizedSpaces, pieces.concat(newPiece));
+        }
+      }
+    }
+  }
+
+  dfs(normalizeRects(initialTargets), normalizeSpaces(initialSpaces), []);
+  return best;
+}
+
+function selectTarget(targets, spaces, levelLimit) {
+  let best = null;
+
+  for (let i = 0; i < targets.length; i++) {
+    const target = targets[i];
+    const candidates = generateCoverCandidates(target, spaces, levelLimit);
+    if (!candidates.length) return null;
+
+    const maxArea = Math.max(...candidates.map(c => c.targetW * c.targetH));
+    const score = target.width * target.height * 100000 - maxArea * 100 + candidates.length;
+
+    if (!best || score > best.score) {
+      best = { index: i, target, score };
+    }
+  }
+
+  return best;
+}
+
+function generateCoverCandidates(target, spaces, levelLimit) {
+  const EPS = 0.0001;
+  const candidates = [];
+  const seen = new Set();
+
+  for (let i = 0; i < spaces.length; i++) {
+    const s = spaces[i];
+    if (s.level > levelLimit) continue;
+
+    const widths = uniqueNumbers([target.width, s.width, s.height, Math.min(target.width, s.width), Math.min(target.width, s.height)]).filter(v => v > EPS && v <= target.width + EPS);
+    const heights = uniqueNumbers([target.height, s.height, s.width, Math.min(target.height, s.height), Math.min(target.height, s.width)]).filter(v => v > EPS && v <= target.height + EPS);
+
+    for (const w of widths) {
+      for (const h of heights) {
+        const fitsNormal = w <= s.width + EPS && h <= s.height + EPS;
+        const fitsRotated = h <= s.width + EPS && w <= s.height + EPS;
+        if (!fitsNormal && !fitsRotated) continue;
+
+        const variants = [];
+        if (fitsNormal) variants.push({ stockW: w, stockH: h, rotated: false });
+        if (fitsRotated && (!same(w, h) || !fitsNormal)) variants.push({ stockW: h, stockH: w, rotated: true });
+
+        for (const v of variants) {
+          const key = `${i}|${round(w)}|${round(h)}|${round(v.stockW)}|${round(v.stockH)}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+
+          candidates.push({
+            spaceIndex: i,
+            targetW: w,
+            targetH: h,
+            stockW: v.stockW,
+            stockH: v.stockH,
+            rotated: v.rotated,
+            exactTarget: same(w, target.width) && same(h, target.height),
+            area: w * h,
+            level: s.level
+          });
+        }
+      }
+    }
+  }
+
+  candidates.sort((a, b) => {
+    if (b.area !== a.area) return b.area - a.area;
+    if (a.exactTarget !== b.exactTarget) return a.exactTarget ? -1 : 1;
+    if (a.level !== b.level) return a.level - b.level;
+    return a.spaceIndex - b.spaceIndex;
+  });
+
+  return candidates.slice(0, 18);
+}
+
+function splitTargetRect(target, usedW, usedH) {
+  const EPS = 0.0001;
+  const variants = [];
+
+  const rightA = { cutNumber: target.cutNumber, x: target.x + usedW, y: target.y, width: target.width - usedW, height: usedH };
+  const bottomA = { cutNumber: target.cutNumber, x: target.x, y: target.y + usedH, width: target.width, height: target.height - usedH };
+  variants.push([rightA, bottomA].filter(r => r.width > EPS && r.height > EPS));
+
+  const rightB = { cutNumber: target.cutNumber, x: target.x + usedW, y: target.y, width: target.width - usedW, height: target.height };
+  const bottomB = { cutNumber: target.cutNumber, x: target.x, y: target.y + usedH, width: usedW, height: target.height - usedH };
+  variants.push([rightB, bottomB].filter(r => r.width > EPS && r.height > EPS));
+
+  return uniqueRectVariants(variants);
+}
+
+function splitStockRect(space, usedW, usedH) {
+  const EPS = 0.0001;
+  const nextLevel = space.level + 1;
+  const variants = [];
+
+  const rightA = { panel: space.panel, x: space.x + usedW, y: space.y, width: space.width - usedW, height: usedH, level: nextLevel };
+  const bottomA = { panel: space.panel, x: space.x, y: space.y + usedH, width: space.width, height: space.height - usedH, level: nextLevel };
+  variants.push([rightA, bottomA].filter(r => r.width > EPS && r.height > EPS));
+
+  const rightB = { panel: space.panel, x: space.x + usedW, y: space.y, width: space.width - usedW, height: space.height, level: nextLevel };
+  const bottomB = { panel: space.panel, x: space.x, y: space.y + usedH, width: usedW, height: space.height - usedH, level: nextLevel };
+  variants.push([rightB, bottomB].filter(r => r.width > EPS && r.height > EPS));
+
+  return uniqueRectVariants(variants);
+}
+
+function buildRecursiveResult(solved, panelCount, panelW, panelH) {
+  const cellPieces = new Map();
+  const panels = [];
+
+  for (let i = 1; i <= panelCount; i++) panels.push({ items: [], waste: [] });
+
+  const sortedPieces = solved.pieces.slice().sort((a, b) => a.cutNumber - b.cutNumber || a.y - b.y || a.x - b.x);
+  const partCounters = new Map();
+
+  for (const p of sortedPieces) {
+    if (!cellPieces.has(p.cutNumber)) cellPieces.set(p.cutNumber, []);
+    const arr = cellPieces.get(p.cutNumber);
+    arr.push({
+      x: p.x,
+      y: p.y,
+      width: p.width,
+      height: p.height,
+      level: p.level,
+      sourcePanel: p.sourcePanel
+    });
+
+    const part = (partCounters.get(p.cutNumber) || 0) + 1;
+    partCounters.set(p.cutNumber, part);
+    const labelPrefix = arr.length === 1 ? `#${p.cutNumber}` : `#${p.cutNumber}.${part}`;
+    const rot = p.rotatedInSource ? ' ↻' : '';
+    panels[p.sourcePanel - 1].items.push({
+      label: `${labelPrefix} ${round(p.width)}×${round(p.height)} ур.${p.level}${rot}`
+    });
+  }
+
+  const leftovers = solved.leftovers
+    .filter(w => w.width > 0.0001 && w.height > 0.0001)
+    .map(w => ({ width: w.width, height: w.height, sourcePanel: w.panel, level: w.level }));
+
+  for (const waste of leftovers) {
+    const panel = panels[waste.sourcePanel - 1];
+    if (panel) panel.waste.push(waste);
+  }
+
+  const wallCutElements = [...cellPieces.values()].reduce((sum, pieces) => sum + pieces.length, 0);
+
+  return {
+    panelsForCuts: panelCount,
+    wallCutElements,
+    cellPieces,
+    panels,
+    leftovers,
+    usedWallLevels: getUsedWallLevels(cellPieces),
+    usedAllLevels: getUsedAllLevels(cellPieces, leftovers)
+  };
+}
+
+function normalizeSpaces(spaces) {
+  return normalizeRects(spaces).sort((a, b) =>
+    a.level - b.level || a.panel - b.panel || b.width * b.height - a.width * a.height || b.width - a.width || b.height - a.height
+  );
+}
+
+function normalizeRects(rects) {
+  return rects
+    .filter(r => r.width > 0.0001 && r.height > 0.0001)
+    .map(r => ({ ...r, width: round(r.width), height: round(r.height), x: round(r.x || 0), y: round(r.y || 0) }))
+    .sort((a, b) =>
+      (a.cutNumber || 0) - (b.cutNumber || 0) ||
+      (a.panel || 0) - (b.panel || 0) ||
+      (a.level || 0) - (b.level || 0) ||
+      a.y - b.y || a.x - b.x || b.width * b.height - a.width * a.height
+    );
+}
+
+function makeSearchKey(targets, spaces) {
+  const t = targets.map(r => `${r.cutNumber}:${round(r.x)},${round(r.y)},${round(r.width)},${round(r.height)}`).join('|');
+  const s = spaces.map(r => `${r.panel}:${round(r.width)},${round(r.height)},${r.level}`).join('|');
+  return `${t}__${s}`;
+}
+
+function uniqueNumbers(values) {
+  const out = [];
+  for (const v of values) {
+    if (v <= 0 || !Number.isFinite(v)) continue;
+    if (!out.some(x => same(x, v))) out.push(v);
+  }
+  return out;
+}
+
+function uniqueRectVariants(variants) {
+  const seen = new Set();
+  const out = [];
+  for (const variant of variants) {
+    const key = variant.map(r => `${r.panel || r.cutNumber}:${round(r.x)},${round(r.y)},${round(r.width)},${round(r.height)},${r.level || 0}`).join('|');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(variant);
+  }
+  return out;
+}
+
+function getMaxLeftoverLevel(leftovers) {
+  let max = 0;
+  for (const item of leftovers || []) max = Math.max(max, item.level || 1);
+  return max;
+}
+
+window.addEventListener('resize', render);
+updateCutLevelDesc();
+render();
+</script>
+
+</body>
+</html>
